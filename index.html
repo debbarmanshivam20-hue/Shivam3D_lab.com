@@ -1,0 +1,2162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Shivam Deb Barman — Full-Stack & Cross-Platform Developer Studio</title>
+    <meta name="description" content="Interactive 3D Architectural Developer Portfolio of Shivam Deb Barman, Full-Stack & Cross-Platform Developer specializing in Web Application Architecture, Flutter, Dart, and responsive digital products.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Three.js and Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #f2f2f0;
+            --text-main: #1a1a1a;
+            --text-muted: #666666;
+            --accent: #2a2a2a;
+            --accent-light: #e5e5e2;
+            --glass-bg: rgba(245, 245, 242, 0.82);
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --glass-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-display: 'Cinzel', serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Canvas Container */
+        #webgl-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Fallback Overlay */
+        #webgl-fallback {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: var(--bg-color);
+            padding: 2rem;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            flex-direction: column;
+        }
+        #webgl-fallback h1 {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+        }
+        #webgl-fallback p {
+            color: var(--text-muted);
+            max-width: 480px;
+            line-height: 1.6;
+        }
+
+        /* Loading Screen */
+        #preloader {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background-color: #f7f7f5;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+        #preloader.loaded {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .loader-title {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            letter-spacing: 4px;
+            margin-bottom: 1.5rem;
+            color: var(--text-main);
+        }
+        .loader-bar-bg {
+            width: 200px;
+            height: 2px;
+            background-color: rgba(0,0,0,0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        .loader-bar-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background-color: var(--text-main);
+            transition: width 0.3s ease;
+        }
+        .enter-btn {
+            margin-top: 2rem;
+            padding: 0.8rem 2rem;
+            border: 1px solid var(--text-main);
+            background: transparent;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.4s ease;
+            pointer-events: none;
+        }
+        .enter-btn.ready {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .enter-btn:hover {
+            background: var(--text-main);
+            color: #ffffff;
+        }
+
+        /* Header Navigation */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 1.8rem 2.5rem;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+        }
+        .brand {
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        .brand-name {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--text-main);
+            display: block;
+        }
+        .brand-sub {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            margin-top: 2px;
+            display: block;
+        }
+
+        nav.nav-links {
+            pointer-events: auto;
+            display: flex;
+            gap: 1.8rem;
+            background: var(--glass-bg);
+            padding: 0.6rem 1.4rem;
+            border-radius: 40px;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .nav-item {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            text-decoration: none;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            position: relative;
+            padding: 0.2rem 0;
+            background: none;
+            border: none;
+        }
+        .nav-item:hover, .nav-item.active {
+            color: var(--text-main);
+        }
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background-color: var(--text-main);
+        }
+
+        /* Global UI Overlay & Panels */
+        .ui-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        /* Status Widget */
+        .status-widget {
+            position: fixed;
+            bottom: 2rem;
+            left: 2.5rem;
+            z-index: 60;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            background: var(--glass-bg);
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(8px);
+            line-height: 1.5;
+            pointer-events: auto;
+        }
+        .status-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #22c55e;
+            margin-right: 6px;
+        }
+
+        /* Context Panel System */
+        .panel {
+            position: fixed;
+            top: 50%;
+            right: 5%;
+            transform: translateY(-50%) translateX(30px);
+            width: 440px;
+            max-width: 90vw;
+            max-height: 85vh;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 12px;
+            padding: 2.2rem;
+            overflow-y: auto;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: auto;
+            transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s ease;
+            z-index: 200;
+        }
+        .panel.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) translateX(0);
+        }
+        .panel-close {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: transparent;
+            border: none;
+            font-family: var(--font-mono);
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        .panel-close:hover {
+            background: rgba(0,0,0,0.05);
+            color: var(--text-main);
+        }
+
+        .panel-tag {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .panel-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+            margin-bottom: 0.8rem;
+            line-height: 1.2;
+        }
+        .panel-sub {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        /* Tech Detail Panel */
+        .tech-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0 1.5rem;
+        }
+        .tech-pill {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            background: var(--accent-light);
+            padding: 0.3rem 0.7rem;
+            border-radius: 4px;
+            color: var(--text-main);
+        }
+
+        /* Project Detail Panel */
+        .proj-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            border-top: 1px solid rgba(0,0,0,0.08);
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+            padding: 1rem 0;
+            margin: 1rem 0;
+            font-size: 0.8rem;
+        }
+        .proj-meta-item label {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-bottom: 0.2rem;
+        }
+        .proj-features {
+            list-style: none;
+            margin: 1rem 0 1.5rem;
+        }
+        .proj-features li {
+            font-size: 0.85rem;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+            padding-left: 1.2rem;
+            position: relative;
+            line-height: 1.4;
+        }
+        .proj-features li::before {
+            content: '—';
+            position: absolute;
+            left: 0;
+            color: var(--text-muted);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.8rem;
+            margin-top: 1.5rem;
+        }
+        .btn-action {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            border: 1px solid var(--text-main);
+            background: var(--text-main);
+            color: #ffffff;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-action.secondary {
+            background: transparent;
+            color: var(--text-main);
+        }
+        .btn-action.secondary:hover {
+            background: var(--accent-light);
+        }
+        .btn-action:hover:not(.disabled) {
+            opacity: 0.85;
+            transform: translateY(-1px);
+        }
+        .btn-action.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            border-color: #ccc;
+            background: #eee;
+            color: #888;
+        }
+
+        .panel-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(0,0,0,0.08);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+        }
+        .panel-nav button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+        .panel-nav button:hover {
+            color: var(--text-main);
+        }
+
+        /* Contact Panel / Form */
+        .contact-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+        .form-group label {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            background: rgba(255,255,255,0.7);
+            border: 1px solid rgba(0,0,0,0.12);
+            border-radius: 4px;
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            border-color: var(--text-main);
+            background: #ffffff;
+        }
+        .form-message {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            display: none;
+        }
+        .form-message.error {
+            display: block;
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .form-message.success {
+            display: block;
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        /* 3D Action Prompt Overlay */
+        .action-hint {
+            position: fixed;
+            bottom: 2.5rem;
+            right: 2.5rem;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            background: var(--glass-bg);
+            padding: 0.6rem 1.2rem;
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(8px);
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 60;
+        }
+
+        /* Responsive UI Scaling */
+        @media (max-width: 768px) {
+            header {
+                padding: 1.2rem 1.5rem;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            nav.nav-links {
+                width: 100%;
+                justify-content: space-around;
+                padding: 0.5rem 0.8rem;
+                overflow-x: auto;
+            }
+            .panel {
+                right: 50%;
+                transform: translateY(-50%) translateX(50%);
+                width: 92vw;
+                padding: 1.5rem;
+            }
+            .panel.active {
+                transform: translateY(-50%) translateX(50%);
+            }
+            .status-widget {
+                display: none;
+            }
+            .action-hint {
+                bottom: 1.2rem;
+                right: 50%;
+                transform: translateX(50%);
+                white-space: nowrap;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- WebGL Rendering Container -->
+    <div id="webgl-container"></div>
+
+    <!-- Fallback Overlay for Non-WebGL Devices -->
+    <div id="webgl-fallback">
+        <h1>3D EXPERIENCE UNAVAILABLE</h1>
+        <p>Your browser or hardware graphics system does not currently support WebGL rendering features required for this studio experience. Please try updating your browser or accessing from a modern device.</p>
+    </div>
+
+    <!-- Preloader -->
+    <div id="preloader">
+        <div class="loader-title">SHIVAM DEB BARMAN</div>
+        <div class="loader-bar-bg">
+            <div class="loader-bar-fill" id="loader-fill"></div>
+        </div>
+        <button class="enter-btn" id="enter-btn">ENTER STUDIO</button>
+    </div>
+
+    <!-- Permanent Header Navigation -->
+    <header>
+        <div class="brand" id="brand-home">
+            <span class="brand-name">SHIVAM DEB BARMAN</span>
+            <span class="brand-sub">FULL-STACK & CROSS-PLATFORM DEVELOPER</span>
+        </div>
+        <nav class="nav-links">
+            <button class="nav-item active" data-section="studio">STUDIO</button>
+            <button class="nav-item" data-section="about">ABOUT</button>
+            <button class="nav-item" data-section="tech">TECH LAB</button>
+            <button class="nav-item" data-section="crossplatform">CROSS-PLATFORM</button>
+            <button class="nav-item" data-section="projects">PROJECTS</button>
+            <button class="nav-item" data-section="physics">PHYSICS</button>
+            <button class="nav-item" data-section="contact">CONTACT</button>
+        </nav>
+    </header>
+
+    <!-- Global System Status Overlay -->
+    <div class="status-widget" id="status-widget">
+        <div><span class="status-dot"></span>SYSTEM: ONLINE</div>
+        <div id="status-projects-count">PROJECTS: 03 ACTIVE</div>
+        <div>STACK: FULL-STACK & CROSS-PLATFORM</div>
+    </div>
+
+    <!-- Action Hint Overlay -->
+    <div class="action-hint" id="action-hint">
+        Scroll / Drag to navigate environment — Click 3D objects to inspect
+    </div>
+
+    <!-- Slide-in Detail Panels -->
+    <div class="ui-layer">
+        
+        <!-- About Detail Panel -->
+        <div class="panel" id="panel-about">
+            <button class="panel-close" aria-label="Close">&times;</button>
+            <span class="panel-tag">ARCHITECTURAL PROFILE</span>
+            <h2 class="panel-title">ABOUT ME</h2>
+            <p class="panel-sub" id="about-panel-desc"></p>
+            
+            <span class="panel-tag" style="margin-top: 1.5rem;">CORE DISCIPLINES</span>
+            <ul class="proj-features">
+                <li><strong>FULL-STACK WEB APPLICATIONS:</strong> Building scalable, modular web applications with React, modern backend frameworks, and RESTful service architectures.</li>
+                <li><strong>CROSS-PLATFORM MOBILE DEVELOPMENT:</strong> Constructing native-performance iOS, Android, and Desktop interfaces from a unified codebase using Flutter and Dart.</li>
+                <li><strong>APPLICATION LOGIC & DATA:</strong> Implementing type-safe architecture, state management, asynchronous workflows, and API integrations.</li>
+                <li><strong>PERFORMANCE & ACCESSIBILITY:</strong> Optimizing rendering loops, memory consumption, responsive systems, and semantic interfaces.</li>
+            </ul>
+
+            <div class="btn-group">
+                <a href="#" class="btn-action" id="about-resume-btn">DOWNLOAD RESUME</a>
+            </div>
+        </div>
+
+        <!-- Tech Detail Panel -->
+        <div class="panel" id="panel-tech">
+            <button class="panel-close" aria-label="Close">&times;</button>
+            <span class="panel-tag" id="tech-panel-category">FRONTEND</span>
+            <h2 class="panel-title" id="tech-panel-title">REACT.JS</h2>
+            <p class="panel-sub" id="tech-panel-desc">Component Architecture, Reusable Interfaces, State Management, Performance Optimization.</p>
+
+            <span class="panel-tag">KEY AREAS & CAPABILITIES</span>
+            <ul class="proj-features" id="tech-panel-skills"></ul>
+
+            <span class="panel-tag">RELATED TECHNOLOGIES</span>
+            <div class="tech-list" id="tech-panel-related"></div>
+
+            <button class="btn-action secondary" style="width: 100%; margin-top: 1rem;" id="tech-panel-close-btn">CLOSE INSPECTOR</button>
+        </div>
+
+        <!-- Project Detail Panel -->
+        <div class="panel" id="panel-project">
+            <button class="panel-close" aria-label="Close">&times;</button>
+            <span class="panel-tag" id="proj-panel-num">PROJECT 01</span>
+            <h2 class="panel-title" id="proj-panel-title">FULL-STACK CAFE APPLICATION</h2>
+            
+            <div class="proj-meta">
+                <div class="proj-meta-item">
+                    <label>YEAR</label>
+                    <span id="proj-panel-year">2026</span>
+                </div>
+                <div class="proj-meta-item">
+                    <label>DOMAIN</label>
+                    <span id="proj-panel-domain">Web Application</span>
+                </div>
+            </div>
+
+            <p class="panel-sub" id="proj-panel-desc">Detailed presentation of the web application.</p>
+
+            <span class="panel-tag">KEY FEATURES</span>
+            <ul class="proj-features" id="proj-panel-features"></ul>
+
+            <span class="panel-tag">TECHNOLOGY STACK</span>
+            <div class="tech-list" id="proj-panel-techs"></div>
+
+            <div class="btn-group">
+                <a id="proj-demo-btn" href="#" target="_blank" rel="noopener noreferrer" class="btn-action">LIVE DEMO</a>
+                <a id="proj-source-btn" href="#" target="_blank" rel="noopener noreferrer" class="btn-action secondary">SOURCE CODE</a>
+            </div>
+
+            <div class="panel-nav">
+                <button id="proj-prev-btn">&larr; PREVIOUS</button>
+                <button id="proj-next-btn">NEXT &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Physics x Technology Detail Panel -->
+        <div class="panel" id="panel-physics">
+            <button class="panel-close" aria-label="Close">&times;</button>
+            <span class="panel-tag">METHODOLOGY & MENTAL MODELS</span>
+            <h2 class="panel-title">PHYSICS × TECHNOLOGY</h2>
+            <p class="panel-sub">Connecting physical engineering principles with modern software systems engineering, web architecture, and cross-platform mobile execution.</p>
+
+            <ul class="proj-features">
+                <li><strong>SYSTEM DESIGN & ABSTRACTION:</strong> Decomposing complex software challenges into predictable, isolated mathematical layers and reactive UI components.</li>
+                <li><strong>MODELLING & STATE FREQUENCY:</strong> Managing asynchronous state synchronization, event loops, and data flow pipelines across multi-device applications.</li>
+                <li><strong>LOGICAL THINKING & PRECISION:</strong> Applying deterministic problem solving, type safety, and strict interface contracts across Web, Mobile, and Backend systems.</li>
+                <li><strong>RESOURCE CONSERVATION:</strong> Optimizing frame rates, memory footprints, and network payloads for ultra-responsive user interfaces.</li>
+            </ul>
+
+            <button class="btn-action secondary" style="width: 100%; margin-top: 1rem;" id="physics-panel-close-btn">CLOSE SECTION</button>
+        </div>
+
+        <!-- Contact Form Panel -->
+        <div class="panel" id="panel-contact">
+            <button class="panel-close" aria-label="Close">&times;</button>
+            <span class="panel-tag">COMMUNICATION BRIDGE</span>
+            <h2 class="panel-title">LET'S BUILD SOMETHING</h2>
+            <p class="panel-sub">Get in touch for web applications, cross-platform mobile products, or full-stack software architecture.</p>
+
+            <form class="contact-form" id="contact-form" novalidate>
+                <div class="form-group">
+                    <label for="form-name">NAME</label>
+                    <input type="text" id="form-name" required placeholder="Your Name or Organization">
+                </div>
+                <div class="form-group">
+                    <label for="form-email">EMAIL</label>
+                    <input type="email" id="form-email" required placeholder="name@domain.com">
+                </div>
+                <div class="form-group">
+                    <label for="form-subject">SUBJECT</label>
+                    <input type="text" id="form-subject" required placeholder="Project Discussion">
+                </div>
+                <div class="form-group">
+                    <label for="form-message">MESSAGE</label>
+                    <textarea id="form-message" rows="4" required placeholder="Brief detail of your inquiry..."></textarea>
+                </div>
+
+                <div class="form-message" id="form-status-msg"></div>
+
+                <button type="submit" class="btn-action" style="margin-top: 0.5rem;" id="form-submit-btn">SEND MESSAGE</button>
+            </form>
+
+            <div class="btn-group" style="margin-top: 1.5rem;">
+                <a id="social-github" href="#" target="_blank" rel="noopener noreferrer" class="btn-action secondary">GITHUB</a>
+                <a id="social-linkedin" href="#" target="_blank" rel="noopener noreferrer" class="btn-action secondary">LINKEDIN</a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MAIN JAVASCRIPT LOGIC -->
+    <script>
+        /* ==========================================================================
+           1. CENTRAL PORTFOLIO DATA SYSTEM (Expanded for Cross-Platform)
+           ========================================================================== */
+        const portfolioData = {
+            profile: {
+                name: "SHIVAM DEB BARMAN",
+                title: "FULL-STACK & CROSS-PLATFORM DEVELOPER",
+                location: "Kolkata, West Bengal, India",
+                bio: "Building scalable web applications, cross-platform mobile experiences and high-performance digital products. Specialized in modern full-stack architectures, Flutter & Dart app engineering, responsive design systems, and real-time interactive user interfaces.",
+                additionalStatement: "I also develop cross-platform applications using Flutter and Dart, focusing on responsive interfaces, reusable components, application logic, API integration and scalable application architecture.",
+                resumeUrl: "" // Configurable resume link
+            },
+            skills: [
+                { category: "FRONTEND", level: 0.92 },
+                { category: "CROSS-PLATFORM", level: 0.88 },
+                { category: "BACKEND", level: 0.85 },
+                { category: "DATABASE", level: 0.80 },
+                { category: "UI / UX", level: 0.82 }
+            ],
+            capabilities: [
+                "Full-Stack Web Development",
+                "Cross-Platform Application Development",
+                "Flutter Development",
+                "Dart Programming",
+                "Responsive Mobile & Web UI",
+                "Cross-Platform Architecture",
+                "RESTful API Integration",
+                "Application Logic & State Management",
+                "Mobile-first System Design"
+            ],
+            technologies: [
+                {
+                    id: "flutter",
+                    name: "Flutter",
+                    category: "CROSS-PLATFORM",
+                    description: "Cross-platform UI framework for building responsive, compiled applications for mobile, tablet, and desktop from a single codebase.",
+                    skills: [
+                        "Cross-platform development",
+                        "Widget-based UI engineering",
+                        "Responsive layouts",
+                        "Application architecture",
+                        "State management",
+                        "API integration",
+                        "UI/UX implementation"
+                    ],
+                    related: ["dart", "react", "rest"]
+                },
+                {
+                    id: "dart",
+                    name: "Dart",
+                    category: "CROSS-PLATFORM",
+                    description: "Modern client-optimized programming language used to build performant, type-safe Flutter applications.",
+                    skills: [
+                        "Object-oriented programming",
+                        "Strong typing & static analysis",
+                        "Asynchronous programming (Futures/Streams)",
+                        "Application logic implementation",
+                        "API integration",
+                        "State and data handling"
+                    ],
+                    related: ["flutter", "javascript", "rest"]
+                },
+                {
+                    id: "react",
+                    name: "React.js",
+                    category: "FRONTEND",
+                    description: "Declarative component-driven UI architecture, custom hooks state management, and virtual DOM performance tuning.",
+                    skills: ["Component Architecture", "JSX Rendering", "Hooks & State", "Performance Optimization"],
+                    related: ["javascript", "redux", "tailwind", "rest", "flutter"]
+                },
+                {
+                    id: "javascript",
+                    name: "JavaScript ES6+",
+                    category: "FRONTEND / CORE",
+                    description: "Modern asynchronous execution, event loop optimization, DOM manipulation, and functional patterns.",
+                    skills: ["Async/Await", "ES6+ Syntax", "DOM Manipulation", "Functional Programming"],
+                    related: ["react", "node", "threejs", "dart"]
+                },
+                {
+                    id: "redux",
+                    name: "Redux Toolkit",
+                    category: "STATE MANAGEMENT",
+                    description: "Predictable central application state container, RTK Query caching, and immutability controls.",
+                    skills: ["Global State", "Reducers & Slices", "RTK Query", "Middleware"],
+                    related: ["react", "javascript", "rest"]
+                },
+                {
+                    id: "tailwind",
+                    name: "Tailwind CSS",
+                    category: "STYLING",
+                    description: "Utility-first CSS framework for rapid responsive system layout construction and custom theme design.",
+                    skills: ["Responsive Grids", "Flexbox Systems", "Custom Styling", "Design Tokens"],
+                    related: ["react", "javascript"]
+                },
+                {
+                    id: "node",
+                    name: "Node.js",
+                    category: "BACKEND",
+                    description: "Event-driven asynchronous backend runtime for high-throughput network services and server applications.",
+                    skills: ["Server Execution", "Event Loop", "File System & Streams", "npm Ecosystem"],
+                    related: ["express", "mongodb", "javascript", "rest"]
+                },
+                {
+                    id: "express",
+                    name: "Express.js",
+                    category: "BACKEND",
+                    description: "Minimalist server framework for RESTful API endpoint construction, middleware handling, and routing.",
+                    skills: ["REST Endpoint Design", "Middleware Architecture", "Routing", "Request Validation"],
+                    related: ["node", "mongodb", "rest"]
+                },
+                {
+                    id: "mongodb",
+                    name: "MongoDB",
+                    category: "DATABASE",
+                    description: "NoSQL document database optimized for flexible data modeling, indexing, and high-scalability storage.",
+                    skills: ["Document Modeling", "BSON Schema Design", "Aggregation Pipelines", "Indexing"],
+                    related: ["node", "express"]
+                },
+                {
+                    id: "rest",
+                    name: "REST API",
+                    category: "ARCHITECTURE",
+                    description: "Standardized HTTP communications protocol, payload structuring, and endpoint resource management.",
+                    skills: ["HTTP Methods & Headers", "JSON Payload Structuring", "Authentication Integration", "API Contracts"],
+                    related: ["react", "flutter", "node", "express"]
+                },
+                {
+                    id: "threejs",
+                    name: "Three.js",
+                    category: "3D / GRAPHICS",
+                    description: "WebGL hardware acceleration library for 3D architectural spaces, custom shaders, and particle systems.",
+                    skills: ["WebGL Rendering", "3D Scene Graphs", "Lighting & Materials", "Camera Navigation"],
+                    related: ["javascript"]
+                }
+            ],
+            projects: [
+                {
+                    id: "cafe",
+                    number: "01",
+                    title: "FULL-STACK CAFE WEB APPLICATION",
+                    year: "2026",
+                    domain: "E-Commerce / Hospitality",
+                    category: "Full-Stack Web Development",
+                    technologies: ["React.js", "Redux Toolkit", "Tailwind CSS", "REST API", "Node.js"],
+                    description: "A dynamic restaurant digital storefront featuring digital menus, cart state persistence, interactive item configuration, and client-side ordering.",
+                    features: [
+                        "Dynamic menu rendering with category filtering",
+                        "Redux-powered cart interaction and state persistence",
+                        "Mobile-first fluid responsive architecture",
+                        "RESTful API integration for order handling"
+                    ],
+                    liveUrl: "",
+                    sourceUrl: ""
+                },
+                {
+                    id: "inventory",
+                    number: "02",
+                    title: "INVENTORY MANAGEMENT SYSTEM",
+                    year: "2026",
+                    domain: "Enterprise Software",
+                    category: "Full-Stack Web Development",
+                    technologies: ["React.js", "Node.js", "Express.js", "MongoDB", "Tailwind CSS"],
+                    description: "Real-time enterprise resource tracking application with warehouse metric dashboards, stock alert notifications, and multi-tier database query optimization.",
+                    features: [
+                        "Real-time stock level visualization dashboards",
+                        "Automated inventory recalculation logic",
+                        "Warehouse relational categorization and search",
+                        "Optimized MongoDB indexing for quick lookup"
+                    ],
+                    liveUrl: "",
+                    sourceUrl: ""
+                },
+                {
+                    id: "portfolio3d",
+                    number: "03",
+                    title: "ARCHITECTURAL 3D PORTFOLIO",
+                    year: "2026",
+                    domain: "WebGL / Interactive 3D",
+                    category: "Interactive 3D Web",
+                    technologies: ["Three.js", "JavaScript ES6+", "HTML5 Canvas", "CSS3D / WebGL"],
+                    description: "Spatial 3D developer environment featuring architectural spatial navigation, raycasted interactive physics nodes, contextual slide-in UI systems, and spatial camera choreography.",
+                    features: [
+                        "Spatial 3D camera navigation system",
+                        "Raycasting collision for tech & project nodes",
+                        "Custom architectural lighting and glass materials",
+                        "Responsive camera aspect and GPU fallbacks"
+                    ],
+                    liveUrl: "",
+                    sourceUrl: ""
+                },
+                {
+                    id: "crossplatform_future",
+                    number: "04",
+                    title: "CROSS-PLATFORM APPLICATION",
+                    year: "2026",
+                    domain: "Mobile / Multi-Platform",
+                    category: "Cross-Platform Development",
+                    technologies: ["Flutter", "Dart", "REST API", "Responsive Mobile UI"],
+                    description: "Configurable cross-platform architecture showcase designed for seamless deployment across iOS, Android, Tablet, and Desktop environments from a single Flutter/Dart codebase.",
+                    features: [
+                        "Shared Dart business logic across multiple operating systems",
+                        "Adaptive Flutter UI layouts optimized for phones and tablets",
+                        "Asynchronous state handling and REST API integration",
+                        "High performance native-compiled user experience"
+                    ],
+                    liveUrl: "",
+                    sourceUrl: ""
+                }
+            ],
+            contact: {
+                email: "shivam.debbarman.dev@example.com",
+                phone: "+91 98765 43210",
+                location: "Kolkata, West Bengal, India",
+                github: "https://github.com",
+                linkedin: "https://linkedin.com",
+                config: {
+                    endpoint: "",
+                    method: "POST"
+                }
+            }
+        };
+
+        /* ==========================================================================
+           2. GLOBAL INTERACTION STATE & CAMERA SYSTEM
+           ========================================================================== */
+        const state = {
+            selectedObject: null,
+            selectedProjectIndex: 0,
+            selectedTechnology: null,
+            activeSection: "studio",
+            activePanel: null,
+            isTransitioning: false,
+            webglSupported: true
+        };
+
+        const cameraState = {
+            currentSection: "studio",
+            previousSection: null,
+            focusedObject: null,
+            savedPosition: new THREE.Vector3(),
+            savedTarget: new THREE.Vector3()
+        };
+
+        // Expanded Section Anchor Camera Transforms
+        const sectionWaypoints = {
+            studio: {
+                pos: new THREE.Vector3(0, 4, 18),
+                target: new THREE.Vector3(0, 2, 0)
+            },
+            about: {
+                pos: new THREE.Vector3(-12, 3, 10),
+                target: new THREE.Vector3(-12, 2, -2)
+            },
+            tech: {
+                pos: new THREE.Vector3(12, 3, 10),
+                target: new THREE.Vector3(12, 2, -2)
+            },
+            crossplatform: {
+                pos: new THREE.Vector3(26, 4, 8),
+                target: new THREE.Vector3(26, 2, -4)
+            },
+            projects: {
+                pos: new THREE.Vector3(0, 3, -12),
+                target: new THREE.Vector3(0, 1.5, -20)
+            },
+            physics: {
+                pos: new THREE.Vector3(-14, 4, 22),
+                target: new THREE.Vector3(-14, 2, 28)
+            },
+            contact: {
+                pos: new THREE.Vector3(0, 4, 30),
+                target: new THREE.Vector3(0, 2, 38)
+            }
+        };
+
+        /* ==========================================================================
+           3. WEBGL AVAILABILITY & THREE.JS INITIALIZATION
+           ========================================================================== */
+        function checkWebGLSupport() {
+            try {
+                const canvas = document.createElement('canvas');
+                return !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+            } catch (e) {
+                return false;
+            }
+        }
+
+        if (!checkWebGLSupport()) {
+            document.getElementById('preloader').style.display = 'none';
+            document.getElementById('webgl-fallback').style.display = 'flex';
+            state.webglSupported = false;
+        }
+
+        let scene, camera, renderer, controls;
+        let raycaster, mouse;
+        const interactiveObjects = [];
+        const techNodeMeshes = {};
+        const projectMeshes = [];
+        let techConnectionLines = [];
+        let crossPlatformAnimables = [];
+
+        function initEngine() {
+            if (!state.webglSupported) return;
+
+            const container = document.getElementById('webgl-container');
+
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf2f2f0);
+            scene.fog = new THREE.FogExp2(0xf2f2f0, 0.018);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.copy(sectionWaypoints.studio.pos);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            container.appendChild(renderer.domElement);
+
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 + 0.05;
+            controls.minDistance = 3;
+            controls.maxDistance = 60;
+            controls.target.copy(sectionWaypoints.studio.target);
+
+            // Raycaster
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            // Build Scene Environments
+            buildEnvironment();
+            buildStudioArea();
+            buildAboutArea();
+            buildTechLab();
+            buildCrossPlatformArea(); // Phase 5.5: Integrated Cross-Platform Studio
+            buildProjectShowroom();
+            buildPhysicsArea();
+            buildContactArea();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            window.addEventListener('pointermove', onPointerMove);
+            window.addEventListener('click', onPointerClick);
+            window.addEventListener('keydown', onKeyDown);
+
+            // Initialize UI Hooks
+            initUI();
+
+            // Preloader Simulation
+            simulatePreloader();
+        }
+
+        /* ==========================================================================
+           4. 3D SCENE ARCHITECTURE BUILDERS & MATERIALS
+           ========================================================================== */
+        const materials = {
+            concrete: new THREE.MeshStandardMaterial({ color: 0xe8e8e5, roughness: 0.8, metalness: 0.1 }),
+            darkMetal: new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.4, metalness: 0.8 }),
+            accentGlass: new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 0.85, opacity: 1, transparent: true, roughness: 0.1, ior: 1.5 }),
+            wood: new THREE.MeshStandardMaterial({ color: 0xb59a7a, roughness: 0.6, metalness: 0.1 }),
+            highlight: new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.2, metalness: 0.5, emissive: 0x1d4ed8, emissiveIntensity: 0.2 }),
+            flutterBlue: new THREE.MeshStandardMaterial({ color: 0x02569b, roughness: 0.3, metalness: 0.4 }),
+            dartTeal: new THREE.MeshStandardMaterial({ color: 0x0175c2, roughness: 0.3, metalness: 0.4 }),
+            deviceBody: new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.2, metalness: 0.8 }),
+            dimmed: new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.9, opacity: 0.4, transparent: true })
+        };
+
+        function buildEnvironment() {
+            // Main Floor
+            const floorGeo = new THREE.PlaneGeometry(160, 160);
+            const floor = new THREE.Mesh(floorGeo, materials.concrete);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            const grid = new THREE.GridHelper(160, 80, 0xcccccc, 0xe5e5e0);
+            grid.position.y = 0.01;
+            scene.add(grid);
+
+            // Ambient & Architectural Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            const mainSun = new THREE.DirectionalLight(0xffffff, 0.85);
+            mainSun.position.set(30, 45, 25);
+            mainSun.castShadow = true;
+            mainSun.shadow.mapSize.width = 2048;
+            mainSun.shadow.mapSize.height = 2048;
+            mainSun.shadow.camera.near = 0.5;
+            mainSun.shadow.camera.far = 120;
+            mainSun.shadow.camera.left = -45;
+            mainSun.shadow.camera.right = 45;
+            mainSun.shadow.camera.top = 45;
+            mainSun.shadow.camera.bottom = -45;
+            scene.add(mainSun);
+
+            const fillLight = new THREE.DirectionalLight(0xdbeafe, 0.35);
+            fillLight.position.set(-25, 25, -25);
+            scene.add(fillLight);
+        }
+
+        // Helper Canvas Texture Creator for Readable Labels
+        function createTextTexture(lines, width = 512, height = 256, bg = '#1e293b', textColor = '#ffffff', accentColor = '#38bdf8') {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(6, 6, width - 12, height - 12);
+
+            lines.forEach((line) => {
+                ctx.fillStyle = line.color || (line.isHeader ? accentColor : textColor);
+                ctx.font = line.font || (line.isHeader ? 'bold 24px sans-serif' : '16px sans-serif');
+                ctx.textAlign = line.align || 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(line.text, line.x || 30, line.y);
+            });
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        // Section 1: Developer Studio Workstation
+        function buildStudioArea() {
+            const group = new THREE.Group();
+            group.position.set(0, 0, 0);
+
+            // Desk
+            const deskGeo = new THREE.BoxGeometry(6.5, 0.2, 3.2);
+            const desk = new THREE.Mesh(deskGeo, materials.wood);
+            desk.position.set(0, 1.4, 0);
+            desk.castShadow = true;
+            desk.receiveShadow = true;
+            group.add(desk);
+
+            // Legs
+            const legGeo = new THREE.BoxGeometry(0.12, 1.4, 3.0);
+            const legL = new THREE.Mesh(legGeo, materials.darkMetal);
+            legL.position.set(-3.0, 0.7, 0);
+            const legR = legL.clone();
+            legR.position.set(3.0, 0.7, 0);
+            group.add(legL, legR);
+
+            // Desktop Monitor
+            const monStand = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 0.4), materials.darkMetal);
+            monStand.position.set(0, 1.9, -0.8);
+            group.add(monStand);
+
+            const monScreen = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.9, 0.1), materials.darkMetal);
+            monScreen.position.set(0, 2.8, -0.8);
+            monScreen.castShadow = true;
+            group.add(monScreen);
+
+            // Screen Canvas - Full-Stack & Cross-Platform Display
+            const screenTex = createTextTexture([
+                { text: 'SHIVAM DEB BARMAN', y: 50, isHeader: true, font: 'bold 22px monospace' },
+                { text: 'FULL-STACK & CROSS-PLATFORM DEVELOPER', y: 95, color: '#94a3b8', font: 'bold 15px sans-serif' },
+                { text: '• Web Architecture (React, Node, DB)', y: 140, color: '#f8fafc', font: '14px monospace' },
+                { text: '• Cross-Platform Mobile (Flutter, Dart)', y: 170, color: '#38bdf8', font: '14px monospace' },
+                { text: 'SYSTEM STATUS: READY', y: 215, color: '#22c55e', font: 'bold 14px monospace' }
+            ], 512, 286, '#0f172a');
+
+            const screenPlane = new THREE.Mesh(new THREE.PlaneGeometry(3.3, 1.8), new THREE.MeshBasicMaterial({ map: screenTex }));
+            screenPlane.position.set(0, 2.8, -0.74);
+            group.add(screenPlane);
+
+            // Integrated Pedestals
+            createIntegrated3DButton(group, "VIEW PROJECTS", new THREE.Vector3(-2.0, 1.55, 0.8), () => navigateToSection('projects'));
+            createIntegrated3DButton(group, "CONTACT ME", new THREE.Vector3(2.0, 1.55, 0.8), () => navigateToSection('contact'));
+
+            scene.add(group);
+        }
+
+        function createIntegrated3DButton(parentGroup, text, position, onClick) {
+            const btnGroup = new THREE.Group();
+            btnGroup.position.copy(position);
+
+            const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.12, 0.5), materials.darkMetal);
+            baseMesh.castShadow = true;
+            btnGroup.add(baseMesh);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, 0, 256, 64);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 20px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 128, 32);
+
+            const tex = new THREE.CanvasTexture(canvas);
+            const labelMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.4), new THREE.MeshBasicMaterial({ map: tex }));
+            labelMesh.position.y = 0.07;
+            labelMesh.rotation.x = -Math.PI / 2;
+            btnGroup.add(labelMesh);
+
+            baseMesh.userData = { isInteractive: true, onClick: onClick };
+            interactiveObjects.push(baseMesh);
+
+            parentGroup.add(btnGroup);
+        }
+
+        // Section 2: Architectural Profile / About Area
+        function buildAboutArea() {
+            const group = new THREE.Group();
+            group.position.set(-12, 0, -2);
+
+            const wall = new THREE.Mesh(new THREE.BoxGeometry(6, 6, 0.4), materials.concrete);
+            wall.position.set(0, 3, 0);
+            wall.castShadow = true;
+            wall.receiveShadow = true;
+            group.add(wall);
+
+            const plaque = new THREE.Mesh(new THREE.BoxGeometry(4.4, 3.2, 0.2), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 }));
+            plaque.position.set(0, 3, 0.3);
+            plaque.userData = { isInteractive: true, type: 'about-trigger', onClick: () => openPanel('panel-about') };
+            group.add(plaque);
+            interactiveObjects.push(plaque);
+
+            const plaqueTex = createTextTexture([
+                { text: 'SHIVAM DEB BARMAN', y: 40, isHeader: true, color: '#0f172a', font: 'bold 24px sans-serif' },
+                { text: 'FULL-STACK & CROSS-PLATFORM DEVELOPER', y: 75, color: '#2563eb', font: 'bold 13px monospace' },
+                { text: 'Building Web Apps & Mobile Products', y: 110, color: '#475569', font: '14px sans-serif' },
+                { text: '• Web: React, Node, Express, MongoDB', y: 145, color: '#334155', font: '13px sans-serif' },
+                { text: '• Mobile: Flutter & Dart Ecosystem', y: 175, color: '#0284c7', font: '13px sans-serif' },
+                { text: '[ CLICK TO INSPECT FULL PROFILE ]', y: 220, color: '#16a34a', font: 'bold 14px monospace' }
+            ], 512, 256, '#ffffff');
+
+            const labelMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 3.0), new THREE.MeshBasicMaterial({ map: plaqueTex }));
+            labelMesh.position.set(0, 3, 0.41);
+            group.add(labelMesh);
+
+            scene.add(group);
+        }
+
+        // Section 3: Technology Lab
+        function buildTechLab() {
+            const group = new THREE.Group();
+            group.position.set(12, 0, -2);
+
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(5.2, 5.8, 0.4, 32), materials.concrete);
+            base.position.y = 0.2;
+            group.add(base);
+
+            // Skill Bars
+            portfolioData.skills.forEach((s, idx) => {
+                const angle = (idx / portfolioData.skills.length) * Math.PI * 2;
+                const radius = 3.6;
+                const x = Math.cos(angle) * radius;
+                const z = Math.sin(angle) * radius;
+                const barH = 3.2 * s.level;
+
+                const bar = new THREE.Mesh(new THREE.BoxGeometry(0.4, barH, 0.4), new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3 }));
+                bar.position.set(x, barH / 2 + 0.4, z);
+                bar.castShadow = true;
+                group.add(bar);
+            });
+
+            // Tech Constellation Sphere Nodes (Excluding Flutter/Dart which live in dedicated section)
+            const webTechs = portfolioData.technologies.filter(t => t.category !== "CROSS-PLATFORM");
+            const nodeRadius = 2.4;
+
+            webTechs.forEach((tech, i) => {
+                const phi = Math.acos(-1 + (2 * i) / webTechs.length);
+                const theta = Math.sqrt(webTechs.length * Math.PI) * phi;
+
+                const localPos = new THREE.Vector3(
+                    nodeRadius * Math.cos(theta) * Math.sin(phi),
+                    nodeRadius * Math.sin(theta) * Math.sin(phi) + 2.8,
+                    nodeRadius * Math.cos(phi)
+                );
+
+                const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.2, metalness: 0.5 }));
+                mesh.position.copy(localPos);
+                mesh.castShadow = true;
+
+                mesh.userData = {
+                    isInteractive: true,
+                    type: 'tech',
+                    data: tech,
+                    worldPos: localPos.clone().add(group.position)
+                };
+
+                interactiveObjects.push(mesh);
+                techNodeMeshes[tech.id] = mesh;
+                group.add(mesh);
+            });
+
+            scene.add(group);
+        }
+
+        /* ==========================================================================
+           5. PHASE 5.5: DEDICATED CROSS-PLATFORM DEVELOPMENT 3D ENVIRONMENT
+           ========================================================================== */
+        function buildCrossPlatformArea() {
+            const group = new THREE.Group();
+            group.position.set(26, 0, -4); // Positioned smoothly along camera journey
+
+            // Architectural Platform Podium
+            const platformGeo = new THREE.BoxGeometry(10, 0.4, 8);
+            const platform = new THREE.Mesh(platformGeo, materials.concrete);
+            platform.position.y = 0.2;
+            platform.receiveShadow = true;
+            group.add(platform);
+
+            // Title Plaque Header
+            const headerTex = createTextTexture([
+                { text: 'CROSS-PLATFORM DEVELOPMENT LAB', y: 40, isHeader: true, align: 'center', x: 256, color: '#38bdf8' },
+                { text: 'FLUTTER & DART ECOSYSTEM • ONE CODEBASE → MULTIPLE TARGETS', y: 80, align: 'center', x: 256, color: '#94a3b8', font: '13px monospace' }
+            ], 512, 128, '#0f172a');
+
+            const headerMesh = new THREE.Mesh(new THREE.PlaneGeometry(6, 1.5), new THREE.MeshBasicMaterial({ map: headerTex }));
+            headerMesh.position.set(0, 5.2, -3.5);
+            group.add(headerMesh);
+
+            // ----------------------------------------------------------------------
+            // A. FLUTTER 3D PANEL
+            // ----------------------------------------------------------------------
+            const flutterPanelGroup = new THREE.Group();
+            flutterPanelGroup.position.set(-2.8, 2.5, -1.8);
+
+            const flutterCardMesh = new THREE.Mesh(new THREE.BoxGeometry(2.4, 3.2, 0.15), materials.flutterBlue);
+            flutterCardMesh.castShadow = true;
+
+            const flutterTechData = portfolioData.technologies.find(t => t.id === 'flutter');
+            flutterCardMesh.userData = {
+                isInteractive: true,
+                type: 'tech',
+                data: flutterTechData,
+                worldPos: new THREE.Vector3(23.2, 2.5, -5.8)
+            };
+            interactiveObjects.push(flutterCardMesh);
+            techNodeMeshes['flutter'] = flutterCardMesh;
+            flutterPanelGroup.add(flutterCardMesh);
+
+            const flutterTex = createTextTexture([
+                { text: 'FLUTTER', y: 35, isHeader: true, color: '#ffffff', font: 'bold 26px sans-serif' },
+                { text: 'CROSS-PLATFORM UI', y: 70, color: '#38bdf8', font: 'bold 12px monospace' },
+                { text: 'MOBILE DEVELOPMENT', y: 95, color: '#cbd5e1', font: '12px monospace' },
+                { text: 'RESPONSIVE INTERFACES', y: 120, color: '#cbd5e1', font: '12px monospace' },
+                { text: 'SINGLE CODEBASE', y: 145, color: '#cbd5e1', font: '12px monospace' },
+                { text: '[ CLICK TO INSPECT ]', y: 210, color: '#38bdf8', font: 'bold 13px monospace' }
+            ], 256, 256, '#02569b');
+
+            const flutterLabel = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 3.1), new THREE.MeshBasicMaterial({ map: flutterTex }));
+            flutterLabel.position.z = 0.09;
+            flutterPanelGroup.add(flutterLabel);
+            group.add(flutterPanelGroup);
+
+            // ----------------------------------------------------------------------
+            // B. DART 3D PANEL
+            // ----------------------------------------------------------------------
+            const dartPanelGroup = new THREE.Group();
+            dartPanelGroup.position.set(2.8, 2.5, -1.8);
+
+            const dartCardMesh = new THREE.Mesh(new THREE.BoxGeometry(2.4, 3.2, 0.15), materials.dartTeal);
+            dartCardMesh.castShadow = true;
+
+            const dartTechData = portfolioData.technologies.find(t => t.id === 'dart');
+            dartCardMesh.userData = {
+                isInteractive: true,
+                type: 'tech',
+                data: dartTechData,
+                worldPos: new THREE.Vector3(28.8, 2.5, -5.8)
+            };
+            interactiveObjects.push(dartCardMesh);
+            techNodeMeshes['dart'] = dartCardMesh;
+            dartPanelGroup.add(dartCardMesh);
+
+            const dartTex = createTextTexture([
+                { text: 'DART', y: 35, isHeader: true, color: '#ffffff', font: 'bold 26px sans-serif' },
+                { text: 'APPLICATION LOGIC', y: 70, color: '#7dd3fc', font: 'bold 12px monospace' },
+                { text: 'OBJECT-ORIENTED', y: 95, color: '#e2e8f0', font: '12px monospace' },
+                { text: 'ASYNC PROGRAMMING', y: 120, color: '#e2e8f0', font: '12px monospace' },
+                { text: 'TYPE-SAFE DEV', y: 145, color: '#e2e8f0', font: '12px monospace' },
+                { text: '[ CLICK TO INSPECT ]', y: 210, color: '#7dd3fc', font: 'bold 13px monospace' }
+            ], 256, 256, '#0175c2');
+
+            const dartLabel = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 3.1), new THREE.MeshBasicMaterial({ map: dartTex }));
+            dartLabel.position.z = 0.09;
+            dartPanelGroup.add(dartLabel);
+            group.add(dartPanelGroup);
+
+            // ----------------------------------------------------------------------
+            // C. CENTRAL FLUTTER/DART ARCHITECTURE NODE
+            // ----------------------------------------------------------------------
+            const centerNodeMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.3, 24), materials.darkMetal);
+            centerNodeMesh.position.set(0, 1.8, -0.5);
+            group.add(centerNodeMesh);
+
+            const nodeLabelTex = createTextTexture([
+                { text: 'DART LOGIC', y: 50, align: 'center', x: 128, color: '#38bdf8', font: 'bold 16px sans-serif' },
+                { text: '↓ FLUTTER UI', y: 90, align: 'center', x: 128, color: '#22c55e', font: 'bold 16px sans-serif' }
+            ], 256, 128, '#0f172a');
+            const nodeLabel = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.7), new THREE.MeshBasicMaterial({ map: nodeLabelTex }));
+            nodeLabel.position.set(0, 1.96, -0.5);
+            nodeLabel.rotation.x = -Math.PI / 2;
+            group.add(nodeLabel);
+
+            // ----------------------------------------------------------------------
+            // D. CROSS-PLATFORM DEVICE SHOWCASE (Mobile, Tablet, Desktop)
+            // ----------------------------------------------------------------------
+            // 1. SMARTPHONE (Mobile)
+            const mobileGroup = new THREE.Group();
+            mobileGroup.position.set(-2.6, 1.2, 1.8);
+
+            const phoneBody = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.7, 0.08), materials.deviceBody);
+            phoneBody.rotation.x = -0.2;
+            phoneBody.castShadow = true;
+            mobileGroup.add(phoneBody);
+
+            const phoneAppTex = createTextTexture([
+                { text: 'FLUTTER MOBILE', y: 30, isHeader: true, align: 'center', x: 128, font: 'bold 18px sans-serif' },
+                { text: '├── Header Bar', y: 70, color: '#cbd5e1', font: '13px monospace' },
+                { text: '├── Nav List', y: 100, color: '#cbd5e1', font: '13px monospace' },
+                { text: '├── App Card', y: 130, color: '#cbd5e1', font: '13px monospace' },
+                { text: '└── Action Btn', y: 160, color: '#22c55e', font: '13px monospace' }
+            ], 256, 256, '#1e293b');
+
+            const phoneScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 1.55), new THREE.MeshBasicMaterial({ map: phoneAppTex }));
+            phoneScreen.position.set(0, 0, 0.045);
+            phoneScreen.rotation.x = -0.2;
+            mobileGroup.add(phoneScreen);
+            group.add(mobileGroup);
+
+            // 2. TABLET
+            const tabletGroup = new THREE.Group();
+            tabletGroup.position.set(0, 1.4, 2.0);
+
+            const tabletBody = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.4, 0.08), materials.deviceBody);
+            tabletBody.rotation.x = -0.2;
+            tabletBody.castShadow = true;
+            tabletGroup.add(tabletBody);
+
+            const tabletAppTex = createTextTexture([
+                { text: 'FLUTTER TABLET RESPONSIVE UI', y: 35, isHeader: true, align: 'center', x: 256, font: 'bold 20px sans-serif' },
+                { text: 'Grid Dashboard Layout • Shared Business Logic', y: 80, align: 'center', x: 256, color: '#38bdf8', font: '14px monospace' },
+                { text: '[ Analytics ]  [ Metric Cards ]  [ Control Panel ]', y: 130, align: 'center', x: 256, color: '#f8fafc', font: '14px monospace' }
+            ], 512, 256, '#0f172a');
+
+            const tabletScreen = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.3), new THREE.MeshBasicMaterial({ map: tabletAppTex }));
+            tabletScreen.position.set(0, 0, 0.045);
+            tabletScreen.rotation.x = -0.2;
+            tabletGroup.add(tabletScreen);
+            group.add(tabletGroup);
+
+            // 3. DESKTOP
+            const desktopGroup = new THREE.Group();
+            desktopGroup.position.set(2.6, 1.6, 1.8);
+
+            const desktopBody = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.5, 0.08), materials.deviceBody);
+            desktopBody.rotation.x = -0.15;
+            desktopBody.castShadow = true;
+            desktopGroup.add(desktopBody);
+
+            const desktopAppTex = createTextTexture([
+                { text: 'FLUTTER DESKTOP APP', y: 35, isHeader: true, align: 'center', x: 256, font: 'bold 20px sans-serif' },
+                { text: 'Multi-Window • Native Window Frame', y: 80, align: 'center', x: 256, color: '#22c55e', font: '14px monospace' },
+                { text: 'Compiled C++ / Native Desktop Executable', y: 130, align: 'center', x: 256, color: '#cbd5e1', font: '13px monospace' }
+            ], 512, 256, '#1e293b');
+
+            const desktopScreen = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 1.4), new THREE.MeshBasicMaterial({ map: desktopAppTex }));
+            desktopScreen.position.set(0, 0, 0.045);
+            desktopScreen.rotation.x = -0.15;
+            desktopGroup.add(desktopScreen);
+            group.add(desktopGroup);
+
+            // ----------------------------------------------------------------------
+            // E. ANIMATED ARCHITECTURAL CONNECTION LINES (Dart -> Flutter -> Devices)
+            // ----------------------------------------------------------------------
+            const lineMat = new THREE.LineDashedMaterial({ color: 0x38bdf8, dashSize: 0.2, gapSize: 0.1, linewidth: 2 });
+
+            const linePoints = [
+                // Dart -> Center Node
+                [new THREE.Vector3(2.8, 2.5, -1.8), new THREE.Vector3(0, 1.8, -0.5)],
+                // Flutter -> Center Node
+                [new THREE.Vector3(-2.8, 2.5, -1.8), new THREE.Vector3(0, 1.8, -0.5)],
+                // Center Node -> Mobile
+                [new THREE.Vector3(0, 1.8, -0.5), new THREE.Vector3(-2.6, 1.2, 1.8)],
+                // Center Node -> Tablet
+                [new THREE.Vector3(0, 1.8, -0.5), new THREE.Vector3(0, 1.4, 2.0)],
+                // Center Node -> Desktop
+                [new THREE.Vector3(0, 1.8, -0.5), new THREE.Vector3(2.6, 1.6, 1.8)]
+            ];
+
+            linePoints.forEach(pair => {
+                const geo = new THREE.BufferGeometry().setFromPoints(pair);
+                const line = new THREE.Line(geo, lineMat);
+                line.computeLineDistances();
+                group.add(line);
+                crossPlatformAnimables.push(line);
+            });
+
+            scene.add(group);
+        }
+
+        // Tech Relationship Line Highlighting System
+        function buildTechConnections() {
+            techConnectionLines.forEach(l => scene.remove(l.line));
+            techConnectionLines = [];
+
+            const techList = portfolioData.technologies;
+            const lineMat = new THREE.LineBasicMaterial({ color: 0xcbd5e1, transparent: true, opacity: 0.3 });
+
+            techList.forEach(tech => {
+                const sourceMesh = techNodeMeshes[tech.id];
+                if (!sourceMesh) return;
+
+                tech.related.forEach(targetId => {
+                    const targetMesh = techNodeMeshes[targetId];
+                    if (targetMesh) {
+                        const points = [
+                            sourceMesh.userData.worldPos || sourceMesh.position,
+                            targetMesh.userData.worldPos || targetMesh.position
+                        ];
+                        const geo = new THREE.BufferGeometry().setFromPoints(points);
+                        const line = new THREE.Line(geo, lineMat.clone());
+                        scene.add(line);
+                        techConnectionLines.push({ line: line, source: tech.id, target: targetId });
+                    }
+                });
+            });
+        }
+
+        function highlightTechConnections(selectedTechId) {
+            techConnectionLines.forEach(conn => {
+                const isConnected = conn.source === selectedTechId || conn.target === selectedTechId;
+                if (selectedTechId === null) {
+                    conn.line.material.color.setHex(0xcbd5e1);
+                    conn.line.material.opacity = 0.3;
+                } else if (isConnected) {
+                    conn.line.material.color.setHex(0x2563eb);
+                    conn.line.material.opacity = 0.9;
+                } else {
+                    conn.line.material.color.setHex(0xe2e8f0);
+                    conn.line.material.opacity = 0.1;
+                }
+            });
+
+            Object.keys(techNodeMeshes).forEach(id => {
+                const mesh = techNodeMeshes[id];
+                if (selectedTechId === null) {
+                    if (id === 'flutter') mesh.material = materials.flutterBlue;
+                    else if (id === 'dart') mesh.material = materials.dartTeal;
+                    else mesh.material = materials.darkMetal;
+                } else if (id === selectedTechId) {
+                    mesh.material = materials.highlight;
+                } else {
+                    const selectedData = portfolioData.technologies.find(t => t.id === selectedTechId);
+                    if (selectedData && selectedData.related.includes(id)) {
+                        mesh.material = materials.highlight;
+                    } else {
+                        mesh.material = materials.dimmed;
+                    }
+                }
+            });
+        }
+
+        // Section 4: Project Showroom
+        function buildProjectShowroom() {
+            const group = new THREE.Group();
+            group.position.set(0, 0, -20);
+
+            const projects = portfolioData.projects;
+            const spacing = 7.2;
+
+            projects.forEach((proj, idx) => {
+                const projGroup = new THREE.Group();
+                const xPos = (idx - 1.5) * spacing;
+                projGroup.position.set(xPos, 0, 0);
+
+                const frame = new THREE.Mesh(new THREE.BoxGeometry(5.0, 3.4, 0.2), materials.darkMetal);
+                frame.position.y = 2.2;
+                frame.castShadow = true;
+                projGroup.add(frame);
+
+                const screenTex = createTextTexture([
+                    { text: `PROJECT ${proj.number}`, y: 40, isHeader: true, color: '#38bdf8', font: 'bold 22px monospace' },
+                    { text: proj.title, y: 85, color: '#ffffff', font: 'bold 18px sans-serif' },
+                    { text: `Domain: ${proj.domain}`, y: 125, color: '#cbd5e1', font: '14px sans-serif' },
+                    { text: proj.technologies.join(' • '), y: 165, color: '#94a3b8', font: '13px monospace' },
+                    { text: '[ CLICK TO INSPECT DETAILS ]', y: 220, color: '#22c55e', font: 'bold 15px monospace' }
+                ], 512, 280, '#0f172a');
+
+                const screenMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 3.2), new THREE.MeshBasicMaterial({ map: screenTex }));
+                screenMesh.position.set(0, 2.2, 0.12);
+
+                screenMesh.userData = {
+                    isInteractive: true,
+                    type: 'project',
+                    index: idx,
+                    data: proj,
+                    worldPos: new THREE.Vector3(xPos, 2.2, -17)
+                };
+
+                interactiveObjects.push(screenMesh);
+                projectMeshes.push(screenMesh);
+                projGroup.add(screenMesh);
+
+                group.add(projGroup);
+            });
+
+            scene.add(group);
+        }
+
+        // Section 5: Physics x Technology Section
+        function buildPhysicsArea() {
+            const group = new THREE.Group();
+            group.position.set(-14, 0, 28);
+
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(4.5, 5.0, 0.4, 32), materials.concrete);
+            base.position.y = 0.2;
+            group.add(base);
+
+            const monolith = new THREE.Mesh(new THREE.BoxGeometry(4.2, 4.2, 0.3), materials.darkMetal);
+            monolith.position.y = 2.5;
+            monolith.castShadow = true;
+            group.add(monolith);
+
+            const physicsTex = createTextTexture([
+                { text: 'PHYSICS × TECHNOLOGY', y: 45, isHeader: true, align: 'center', x: 256, color: '#38bdf8', font: 'bold 22px sans-serif' },
+                { text: 'System Design • Abstraction • Precision', y: 90, align: 'center', x: 256, color: '#ffffff', font: '15px sans-serif' },
+                { text: 'Connecting engineering models with software architecture', y: 130, align: 'center', x: 256, color: '#cbd5e1', font: '13px sans-serif' },
+                { text: '[ CLICK TO READ METHODOLOGY ]', y: 200, align: 'center', x: 256, color: '#22c55e', font: 'bold 15px monospace' }
+            ], 512, 256, '#0f172a');
+
+            const screenMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.0, 4.0), new THREE.MeshBasicMaterial({ map: physicsTex }));
+            screenMesh.position.set(0, 2.5, 0.17);
+            screenMesh.userData = {
+                isInteractive: true,
+                type: 'physics-trigger',
+                onClick: () => openPanel('panel-physics')
+            };
+            interactiveObjects.push(screenMesh);
+            group.add(screenMesh);
+
+            scene.add(group);
+        }
+
+        // Section 6: Contact Area
+        function buildContactArea() {
+            const group = new THREE.Group();
+            group.position.set(0, 0, 38);
+
+            const pillar = new THREE.Mesh(new THREE.BoxGeometry(5.2, 5.2, 0.5), materials.concrete);
+            pillar.position.y = 2.6;
+            pillar.castShadow = true;
+            group.add(pillar);
+
+            const plaque = new THREE.Mesh(new THREE.BoxGeometry(4.4, 4.0, 0.2), materials.accentGlass);
+            plaque.position.set(0, 2.6, 0.3);
+            plaque.userData = {
+                isInteractive: true,
+                type: 'contact-trigger',
+                onClick: () => openPanel('panel-contact')
+            };
+            interactiveObjects.push(plaque);
+            group.add(plaque);
+
+            const contactTex = createTextTexture([
+                { text: "LET'S BUILD SOMETHING", y: 45, isHeader: true, color: '#ffffff', font: 'bold 24px sans-serif' },
+                { text: 'SHIVAM DEB BARMAN', y: 85, color: '#38bdf8', font: 'bold 14px monospace' },
+                { text: 'Email: ' + (portfolioData.contact.email || "Available upon request"), y: 130, color: '#94a3b8', font: '13px sans-serif' },
+                { text: 'Location: ' + portfolioData.contact.location, y: 160, color: '#94a3b8', font: '13px sans-serif' },
+                { text: 'Web & Cross-Platform Applications', y: 190, color: '#f8fafc', font: '13px sans-serif' },
+                { text: '[ CLICK TO OPEN CONTACT FORM ]', y: 240, color: '#22c55e', font: 'bold 14px monospace' }
+            ], 512, 280, '#1a1a1a');
+
+            const labelMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 3.8), new THREE.MeshBasicMaterial({ map: contactTex }));
+            labelMesh.position.set(0, 2.6, 0.42);
+            group.add(labelMesh);
+
+            scene.add(group);
+        }
+
+        /* ==========================================================================
+           6. NAVIGATION CONTROLLER & CAMERA JOURNEY
+           ========================================================================== */
+        function navigateToSection(sectionKey, updateHash = true) {
+            if (!sectionWaypoints[sectionKey] || state.isTransitioning) return;
+
+            state.isTransitioning = true;
+            cameraState.previousSection = cameraState.currentSection;
+            cameraState.currentSection = sectionKey;
+            state.activeSection = sectionKey;
+
+            closeActivePanel(false);
+
+            const targetWaypoint = sectionWaypoints[sectionKey];
+
+            new TWEEN.Tween(camera.position)
+                .to(targetWaypoint.pos, 1500)
+                .easing(TWEEN.Easing.Cubic.InOut)
+                .start();
+
+            new TWEEN.Tween(controls.target)
+                .to(targetWaypoint.target, 1500)
+                .easing(TWEEN.Easing.Cubic.InOut)
+                .onUpdate(() => controls.update())
+                .onComplete(() => {
+                    state.isTransitioning = false;
+                })
+                .start();
+
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.section === sectionKey);
+            });
+
+            if (updateHash) {
+                history.replaceState(null, '', `#${sectionKey}`);
+            }
+        }
+
+        function focusObject(targetPos, lookAtPos, callback) {
+            state.isTransitioning = true;
+
+            cameraState.savedPosition.copy(camera.position);
+            cameraState.savedTarget.copy(controls.target);
+
+            new TWEEN.Tween(camera.position)
+                .to(targetPos, 1200)
+                .easing(TWEEN.Easing.Cubic.Out)
+                .start();
+
+            new TWEEN.Tween(controls.target)
+                .to(lookAtPos, 1200)
+                .easing(TWEEN.Easing.Cubic.Out)
+                .onUpdate(() => controls.update())
+                .onComplete(() => {
+                    state.isTransitioning = false;
+                    if (callback) callback();
+                })
+                .start();
+        }
+
+        function restoreCameraState() {
+            if (cameraState.savedPosition.length() === 0) return;
+
+            state.isTransitioning = true;
+
+            new TWEEN.Tween(camera.position)
+                .to(cameraState.savedPosition, 1000)
+                .easing(TWEEN.Easing.Cubic.Out)
+                .start();
+
+            new TWEEN.Tween(controls.target)
+                .to(cameraState.savedTarget, 1000)
+                .easing(TWEEN.Easing.Cubic.Out)
+                .onUpdate(() => controls.update())
+                .onComplete(() => {
+                    state.isTransitioning = false;
+                })
+                .start();
+        }
+
+        /* ==========================================================================
+           7. INTERACTION & RAYCASTING HANDLERS
+           ========================================================================== */
+        function onPointerMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(interactiveObjects);
+
+            if (intersects.length > 0) {
+                document.body.style.cursor = 'pointer';
+            } else {
+                document.body.style.cursor = 'default';
+            }
+        }
+
+        function onPointerClick(event) {
+            if (event.target.closest('.panel') || event.target.closest('header') || event.target.closest('.nav-item')) {
+                return;
+            }
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(interactiveObjects);
+
+            if (intersects.length > 0) {
+                const hit = intersects[0].object;
+                const data = hit.userData;
+
+                if (data.onClick) {
+                    data.onClick();
+                } else if (data.type === 'tech') {
+                    selectTechnology(data.data);
+                } else if (data.type === 'project') {
+                    selectProject(data.index);
+                }
+            }
+        }
+
+        function selectTechnology(tech) {
+            state.selectedTechnology = tech;
+            highlightTechConnections(tech.id);
+
+            document.getElementById('tech-panel-category').innerText = tech.category;
+            document.getElementById('tech-panel-title').innerText = tech.name;
+            document.getElementById('tech-panel-desc').innerText = tech.description;
+
+            // Render Skills/Capabilities
+            const skillsContainer = document.getElementById('tech-panel-skills');
+            skillsContainer.innerHTML = '';
+            if (tech.skills && tech.skills.length > 0) {
+                tech.skills.forEach(s => {
+                    const li = document.createElement('li');
+                    li.innerText = s;
+                    skillsContainer.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.innerText = "Application development, API integration, scalable architecture.";
+                skillsContainer.appendChild(li);
+            }
+
+            // Render Related Tech
+            const relatedContainer = document.getElementById('tech-panel-related');
+            relatedContainer.innerHTML = '';
+            tech.related.forEach(relId => {
+                const relTech = portfolioData.technologies.find(t => t.id === relId);
+                if (relTech) {
+                    const pill = document.createElement('span');
+                    pill.className = 'tech-pill';
+                    pill.innerText = relTech.name;
+                    relatedContainer.appendChild(pill);
+                }
+            });
+
+            openPanel('panel-tech');
+        }
+
+        function selectProject(index) {
+            state.selectedProjectIndex = index;
+            const proj = portfolioData.projects[index];
+
+            const projMesh = projectMeshes[index];
+            if (projMesh) {
+                const worldPos = projMesh.userData.worldPos;
+                const camTargetPos = new THREE.Vector3(worldPos.x, worldPos.y, worldPos.z + 5.5);
+                focusObject(camTargetPos, worldPos, () => {
+                    openPanel('panel-project');
+                });
+            }
+
+            document.getElementById('proj-panel-num').innerText = `PROJECT ${proj.number}`;
+            document.getElementById('proj-panel-title').innerText = proj.title;
+            document.getElementById('proj-panel-year').innerText = proj.year;
+            document.getElementById('proj-panel-domain').innerText = proj.domain;
+            document.getElementById('proj-panel-desc').innerText = proj.description;
+
+            const featList = document.getElementById('proj-panel-features');
+            featList.innerHTML = '';
+            proj.features.forEach(f => {
+                const li = document.createElement('li');
+                li.innerText = f;
+                featList.appendChild(li);
+            });
+
+            const techContainer = document.getElementById('proj-panel-techs');
+            techContainer.innerHTML = '';
+            proj.technologies.forEach(t => {
+                const pill = document.createElement('span');
+                pill.className = 'tech-pill';
+                pill.innerText = t;
+                techContainer.appendChild(pill);
+            });
+
+            setupSafeLinkButton('proj-demo-btn', proj.liveUrl, 'LIVE DEMO');
+            setupSafeLinkButton('proj-source-btn', proj.sourceUrl, 'SOURCE CODE');
+
+            history.replaceState(null, '', `#project=${proj.id}`);
+        }
+
+        function setupSafeLinkButton(elementId, url, label) {
+            const btn = document.getElementById(elementId);
+            if (url && url.trim() !== '') {
+                btn.href = url;
+                btn.classList.remove('disabled');
+                btn.innerText = label;
+                btn.onclick = null;
+            } else {
+                btn.href = 'javascript:void(0)';
+                btn.classList.add('disabled');
+                btn.innerText = `${label} (Configurable)`;
+                btn.onclick = (e) => { e.preventDefault(); };
+            }
+        }
+
+        /* ==========================================================================
+           8. PANEL SYSTEM & KEYBOARD ACCESSIBILITY
+           ========================================================================== */
+        function openPanel(panelId) {
+            closeActivePanel(false);
+            const panel = document.getElementById(panelId);
+            if (panel) {
+                panel.classList.add('active');
+                state.activePanel = panelId;
+            }
+        }
+
+        function closeActivePanel(restoreCam = true) {
+            if (!state.activePanel) return;
+
+            const panel = document.getElementById(state.activePanel);
+            if (panel) {
+                panel.classList.remove('active');
+            }
+
+            if (state.activePanel === 'panel-tech') {
+                highlightTechConnections(null);
+            }
+
+            state.activePanel = null;
+
+            if (restoreCam) {
+                restoreCameraState();
+            }
+        }
+
+        function onKeyDown(event) {
+            if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+                return;
+            }
+
+            if (event.key === 'Escape') {
+                closeActivePanel(true);
+            } else if (event.key === 'ArrowDown' || event.key === 'PageDown') {
+                navigateSectionStep(1);
+            } else if (event.key === 'ArrowUp' || event.key === 'PageUp') {
+                navigateSectionStep(-1);
+            } else if (event.key === 'Home') {
+                navigateToSection('studio');
+            } else if (event.key === 'End') {
+                navigateToSection('contact');
+            }
+        }
+
+        const sectionOrder = ['studio', 'about', 'tech', 'crossplatform', 'projects', 'physics', 'contact'];
+        function navigateSectionStep(direction) {
+            const currentIdx = sectionOrder.indexOf(state.activeSection);
+            const nextIdx = Math.max(0, Math.min(sectionOrder.length - 1, currentIdx + direction));
+            if (currentIdx !== nextIdx) {
+                navigateToSection(sectionOrder[nextIdx]);
+            }
+        }
+
+        /* ==========================================================================
+           9. UI HOOKS & FORM CONTROLLER
+           ========================================================================== */
+        function initUI() {
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const sec = e.target.dataset.section;
+                    navigateToSection(sec);
+                });
+            });
+
+            document.getElementById('brand-home').addEventListener('click', () => navigateToSection('studio'));
+
+            document.querySelectorAll('.panel-close').forEach(btn => {
+                btn.addEventListener('click', () => closeActivePanel(true));
+            });
+
+            document.getElementById('tech-panel-close-btn').addEventListener('click', () => closeActivePanel(true));
+            document.getElementById('physics-panel-close-btn').addEventListener('click', () => closeActivePanel(true));
+
+            document.getElementById('proj-prev-btn').addEventListener('click', () => {
+                const total = portfolioData.projects.length;
+                const nextIdx = (state.selectedProjectIndex - 1 + total) % total;
+                selectProject(nextIdx);
+            });
+
+            document.getElementById('proj-next-btn').addEventListener('click', () => {
+                const total = portfolioData.projects.length;
+                const nextIdx = (state.selectedProjectIndex + 1) % total;
+                selectProject(nextIdx);
+            });
+
+            setupSafeLinkButton('about-resume-btn', portfolioData.profile.resumeUrl, 'DOWNLOAD RESUME');
+            document.getElementById('about-panel-desc').innerText = portfolioData.profile.bio + " " + portfolioData.profile.additionalStatement;
+
+            setupSafeLinkButton('social-github', portfolioData.contact.github, 'GITHUB');
+            setupSafeLinkButton('social-linkedin', portfolioData.contact.linkedin, 'LINKEDIN');
+
+            const contactForm = document.getElementById('contact-form');
+            contactForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const name = document.getElementById('form-name').value.trim();
+                const email = document.getElementById('form-email').value.trim();
+                const subject = document.getElementById('form-subject').value.trim();
+                const message = document.getElementById('form-message').value.trim();
+
+                if (!name || !email || !subject || !message) {
+                    showFormStatus('All fields are required.', 'error');
+                    return;
+                }
+
+                if (!/\S+@\S+\.\S+/.test(email)) {
+                    showFormStatus('Please enter a valid email address.', 'error');
+                    return;
+                }
+
+                const endpoint = portfolioData.contact.config.endpoint;
+
+                if (!endpoint || endpoint.trim() === '') {
+                    showFormStatus('Contact endpoint configurable. Please reach out directly via email.', 'error');
+                    return;
+                }
+
+                showFormStatus('Sending message...', 'success');
+
+                fetch(endpoint, {
+                    method: portfolioData.contact.config.method || 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, subject, message })
+                })
+                .then(res => {
+                    if (res.ok) {
+                        showFormStatus('MESSAGE SENT SUCCESSFULLY', 'success');
+                        contactForm.reset();
+                    } else {
+                        showFormStatus('Failed to send message. Please try again later.', 'error');
+                    }
+                })
+                .catch(() => {
+                    showFormStatus('Network error occurred. Message not sent.', 'error');
+                });
+            });
+
+            parseURLHash();
+        }
+
+        function showFormStatus(text, type) {
+            const statusMsg = document.getElementById('form-status-msg');
+            statusMsg.innerText = text;
+            statusMsg.className = `form-message ${type}`;
+        }
+
+        function parseURLHash() {
+            const hash = window.location.hash.replace('#', '');
+            if (!hash) return;
+
+            if (hash.startsWith('project=')) {
+                const projId = hash.split('=')[1];
+                const projIdx = portfolioData.projects.findIndex(p => p.id === projId);
+                if (projIdx !== -1) {
+                    navigateToSection('projects', false);
+                    setTimeout(() => selectProject(projIdx), 1000);
+                }
+            } else if (sectionWaypoints[hash]) {
+                navigateToSection(hash, false);
+            }
+        }
+
+        /* ==========================================================================
+           10. PRELOADER & RENDER LOOP
+           ========================================================================== */
+        function simulatePreloader() {
+            const fill = document.getElementById('loader-fill');
+            const enterBtn = document.getElementById('enter-btn');
+            let progress = 0;
+
+            const interval = setInterval(() => {
+                progress += 20;
+                fill.style.width = `${Math.min(progress, 100)}%`;
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    enterBtn.classList.add('ready');
+                }
+            }, 80);
+
+            enterBtn.addEventListener('click', () => {
+                document.getElementById('preloader').classList.add('loaded');
+                buildTechConnections(); // Generate connection lines after initial placement
+            });
+        }
+
+        function onWindowResize() {
+            if (!renderer || !camera) return;
+
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+
+            TWEEN.update();
+
+            if (controls) controls.update();
+
+            // Animate Cross-Platform connection lines (dash offset)
+            crossPlatformAnimables.forEach((line, i) => {
+                if (line.material.lineDashOffset !== undefined) {
+                    line.material.lineDashOffset -= 0.01;
+                }
+            });
+
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+        }
+
+        // DOM Ready Entry Point
+        window.addEventListener('DOMContentLoaded', () => {
+            initEngine();
+            animate();
+        });
+    </script>
+</body>
+</html>
