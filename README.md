@@ -59,7 +59,7 @@ const portfolioData = {
         location: "Kolkata, West Bengal, India",
         resumeUrl: "[https://your-resume-link.pdf](https://your-resume-link.pdf)" // Add direct resume URL here
     },
-    // Customize your live project links
+    // Customize your live project links 
     projects: [
         {
             id: "cafe",
