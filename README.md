@@ -6,7 +6,7 @@ markdown
 [![Platform](https://img.shields.io/badge/Full--Stack-Cross--Platform-blue?style=flat-square)]()
 [![License](https://img.shields.io/badge/License-MIT-lightgrey?style=flat-square)](LICENSE)
 
-An architectural, WebGL-powered 3D personal portfolio and interactive lab built with vanilla HTML5, CSS3, JavaScript (ES6+), and **Three.js**. The application immerses visitors in a spatial environment where skills, multi-target devices, projects, and contact endpoints can be navigated dynamically in 3D space.
+An architectural, WebGL-powered 3D personal portfolio and interactive lab built with vanilla HTML5, CSS3, JavaScript (ES6+), and **Three.js**. The application immerses visitors in a spatial environment where skills, multi-target devices, projects, and contact endpoints can be navigated dynamically in 3D space. 
 
 **Live Deployment:** [debbarmanshivam20-hue.github.io/Shivam3D_lab.com](https://debbarmanshivam20-hue.github.io/Shivam3D_lab.com/)
 
