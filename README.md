@@ -34,7 +34,7 @@ An architectural, WebGL-powered 3D personal portfolio and interactive lab built 
 
 ---
 
-## Project Structure
+## Project Structure 
 
 ```text
 .
